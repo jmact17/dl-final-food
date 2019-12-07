@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.jit.annotations import Optional, Tuple
 from torch import Tensor
+import numpy as np
 # from .utils import load_state_dict_from_url
 
 from DLpreprocess import get_data
@@ -110,6 +111,8 @@ class GoogLeNet(nn.Module):
         if init_weights:
             self._initialize_weights()
 
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=0.0001)
+
     def _initialize_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
@@ -120,7 +123,7 @@ class GoogLeNet(nn.Module):
                 with torch.no_grad():
                     m.weight.copy_(values)
             elif isinstance(m, nn.BatchNorm2d):
-                nn.init.constant_(m.weight.double(), 1)
+                nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias.double(), 0)
 
     def _transform_input(self, x):
@@ -210,16 +213,15 @@ class GoogLeNet(nn.Module):
             return self.eager_outputs(x, aux2, aux1)
 
     def accuracy(self, logits, labels):
-		"""
-		Calculates the model's prediction accuracy by comparing
-		logits to correct labels.
-		:param logits: matrix of size (num_inputs, num_classes); during training, this will be (batch_size, num_classes)
-		:param labels: matrix of size (num_labels, num_classes) containing the answers, during training, this will be (batch_size, num_classes)
+        """
+        Calculates the model's prediction accuracy by comparing logits to correct labels.
+        :param logits: matrix of size (num_inputs, num_classes); during training, this will be (batch_size, num_classes)
+        :param labels: matrix of size (num_labels, num_classes) containing the answers, during training, this will be (batch_size, num_classes)
 
-		:return: the accuracy of the model as a Tensor
-		"""
+        :return: the accuracy of the model as a Tensor
+        """
         return np.mean(np.equal(np.argmax(logits, axis=1), labels))
-	
+
 
 class Inception(nn.Module):
     __constants__ = ['branch2', 'branch3', 'branch4']
@@ -304,68 +306,65 @@ class BasicConv2d(nn.Module):
 
 def train(model, train_data, train_labels):
     '''
-	Trains the model on all of the inputs and labels for one epoch. Shuffles inputs	and labels and batches inputs.
-	:param model: the initialized model to use for the forward and backward passes
-	:param train_inputs: train inputs (all inputs to use for training),
-	shape (num_inputs, num_channels, width, height)
-	:param train_labels: train labels (all labels to use for training),
-	shape (num_labels, num_classes)
-	:return: None
-	'''
-	# shuffle images and labels in same order
+    Trains the model on all of the inputs and labels for one epoch. Shuffles inputs	and labels and batches inputs.
+    :param model: the initialized model to use for the forward and backward passes
+    :param train_inputs: train inputs (all inputs to use for training), shape (num_inputs, num_channels, width, height)
+    :param train_labels: train labels (all labels to use for training), shape (num_labels, num_classes)
+    :return: None
+    '''
+    # shuffle images and labels in same order
     indices = np.arange(len(train_labels))
     np.random.shuffle(indices)
     labels = torch.tensor(train_labels[indices])
     inputs = torch.tensor(train_data[indices,:,:,:])
-	for i in range(0, len(inputs), model.batch_size):
+    for i in range(0, len(inputs), model.batch_size):
         # if (i + model.batch_size > len(train_data)):
-		# 	return
-		inputs_batch = inputs[i:i+model.batch_size]
-		labels_batch = labels[i:i+model.batch_size]
+        # 	return
+        inputs_batch = inputs[i:i+model.batch_size]
+        labels_batch = labels[i:i+model.batch_size]
 
-        logits = model.forward(inputs_batch.float())
+        logits = model.forward(inputs_batch.float()).logits
         loss = nn.CrossEntropyLoss()
         l = loss(logits, labels_batch)
+        print("Training loss: {}".format(l))
+        print("Training accuracy: {}".format(model.accuracy(logits.detach().numpy(), labels_batch.detach().numpy())))
         model.optimizer.zero_grad()
-		l.backward()
-		model.optimizer.step()
-
-        acc = model.accuracy(logits, labels_batch)
-        print("Training accuracy after {} steps: {}".format(i, acc))
+        l.backward()
+        model.optimizer.step()
 
 def test(model, test_data, test_labels):
-	"""
-	Tests the model on the test inputs and labels.
-	:param test_inputs: test data (all images to be tested),
-	shape (num_inputs, num_channels, width, height)
-	:param test_labels: test labels (all corresponding labels),
-	shape (num_labels, num_classes)
-	:return: test accuracy - average accuracy across all batches
-	"""
+    """
+    Tests the model on the test inputs and labels.
+    :param test_inputs: test data (all images to be tested),
+    shape (num_inputs, num_channels, width, height)
+    :param test_labels: test labels (all corresponding labels),
+    shape (num_labels, num_classes)
+    :return: test accuracy - average accuracy across all batches
+    """
     sum_acc = 0.0
-	num_batches = 0
-	for i in range(0, len(test_data), model.batch_size):
-		# if (i + model.batch_size > len(test_data)):
-		# 	break
-		inputs_batch = test_data[i:i+model.batch_size]
-		labels_batch = test_labels[i:i+model.batch_size]
-		logits = model.forward(inputs_batch.float())
+    num_batches = 0
+    for i in range(0, len(test_data), model.batch_size):
+        # if (i + model.batch_size > len(test_data)):
+        # 	break
+        inputs_batch = test_data[i:i+model.batch_size]
+        labels_batch = test_labels[i:i+model.batch_size]
+        logits = model.forward(inputs_batch.float()).logits
 
-		batch_acc = model.accuracy(logits, labels_batch)
-		print("Test accuracy after {} steps: {}".format(i, batch_acc))
-		test_acc += batch_acc
-		sum_acc += model.accuracy_function(logits, labels)
-		num_batches += 1
-	return sum_acc / num_batches
+        batch_acc = model.accuracy(logits.detach().numpy(), labels_batch.detach().numpy())
+        print("Test accuracy after {} steps: {}".format(i, batch_acc))
+        sum_acc += batch_acc
+        num_batches += 1
+    return sum_acc / num_batches
 
 
 if __name__ == '__main__':
-	train_data, train_labels = get_data("meta/train.json", "cannoli", "chicken_curry")
-    # test_data, test_labels = get_data("meta/test.json", "cannoli", "chicken_curry")
-	model = googlenet(num_classes=2).float()
-	logits = model.forward(train_data.float())
-    print("FORWARD PASS LOGITS: ",logits)
-    # for i in range(10): # how many epochs?
-        # print("Epoch: {}".format(i))
-	# 	train(model, train_data, train_labels)
-	# print("Test Accuracy: {}".format(test(model, test_data, test_labels)))
+    train_data, train_labels = get_data("meta/train.json", "cannoli", "chicken_curry")
+    test_data, test_labels = get_data("meta/test.json", "cannoli", "chicken_curry")
+    model = googlenet(num_classes=2).float()
+    #logits = model.forward(train_data.float())
+    #print("FORWARD PASS LOGITS: ",logits)
+    for i in range(1): # how many epochs?
+        print("Epoch: {}".format(i))
+        train(model.train(), train_data.float(), train_labels)
+    acc = test(model.eval(), test_data.float(), test_labels)
+    print("Test accuracy: {}".format(acc))
