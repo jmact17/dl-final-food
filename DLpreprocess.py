@@ -16,7 +16,7 @@ def get_data(file_path, first_class, second_class):
         for img in img_list:
             temp = img.split("/")
             name = temp[1]
-            file_names.append("./images/combined/" + name + ".jpg")
+            file_names.append("./combined/" + name + ".jpg")
             label = temp[0]
             if label == second_class:
                 labels.append(1) # chicken_curry is 1
