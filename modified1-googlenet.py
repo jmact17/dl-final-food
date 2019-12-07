@@ -80,26 +80,26 @@ class GoogLeNet(nn.Module):
         self.aux_logits = aux_logits
         self.transform_input = transform_input
         self.conv1 = conv_block(3, 64, kernel_size=7, stride=2, padding=3)
-        self.b1 = tf.keras.layers.BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001)
-        self.r1 = tf.keras.layers.Activation(tf.keras.layers.LeakyReLU(alpha=0.2))
+        self.b1 = nn.BatchNorm2d(64) 
+        self.r1 = nn.ReLU()
 
         self.conv2 = conv_block(64, 64, kernel_size=1)
         self.conv3 = conv_block(64, 192, kernel_size=3, padding=1)
-        self.b2 = tf.keras.layers.BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001)
-        self.r2 = tf.keras.layers.Activation(tf.keras.layers.LeakyReLU(alpha=0.2))
+        self.b2 = nn.BatchNorm2d(64) 
+        self.r2 = nn.ReLU()
 
         self.inception3a = inception_block(192, 64, 96, 128, 16, 32, 32)
         self.inception3b = inception_block(256, 128, 128, 192, 32, 96, 64)
-        self.b3 = tf.keras.layers.BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001)
-        self.r3 = tf.keras.layers.Activation(tf.keras.layers.LeakyReLU(alpha=0.2))
+        self.b3 = nn.BatchNorm2d(256) 
+        self.r3 = nn.ReLU()
 
         self.inception4a = inception_block(480, 192, 96, 208, 16, 48, 64)
         self.inception4b = inception_block(512, 160, 112, 224, 24, 64, 64)
         self.inception4c = inception_block(512, 128, 128, 256, 24, 64, 64)
         self.inception4d = inception_block(512, 112, 144, 288, 32, 64, 64)
         self.inception4e = inception_block(528, 256, 160, 320, 32, 128, 128)
-        self.b4 = tf.keras.layers.BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001)
-        self.r4 = tf.keras.layers.Activation(tf.keras.layers.LeakyReLU(alpha=0.2))
+        self.b4 = nn.BatchNorm2d(528) 
+        self.r4 = nn.ReLU()
 
         self.inception5a = inception_block(832, 256, 160, 320, 32, 128, 128)
         self.inception5b = inception_block(832, 384, 192, 384, 48, 128, 128)
