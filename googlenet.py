@@ -74,7 +74,7 @@ class GoogLeNet(nn.Module):
         inception_block = blocks[1]
         inception_aux_block = blocks[2]
 
-        self.batch_size = 50 # CHANGE????????????
+        self.batch_size = 100
         self.num_classes = num_classes
 
         self.aux_logits = aux_logits
