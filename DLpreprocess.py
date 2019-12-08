@@ -53,20 +53,12 @@ def get_data(file_path, first_class, second_class):
                 img = img.resize((new_w, min_height))
             if img.size[0] > min_width: # crop to min_width (crop right)
                 img = img.crop((0, 0, min_width, min_height))
-        # print("FINAL IMG SIZE", img.size)
         img.save(f)
         img_array = pyplot.imread(f)
-        # print("IMG ARRAY SIZE", img_array.shape)
         images.append(img_array)
 
     # combine into one 4D matrix & normalize pixels
     images_matrix = (1/255.0) * np.stack(images, axis=0)
     images_matrix = np.transpose(images_matrix, (0,3,1,2))
 
-    # print("IMAGES", images_matrix)
-    # print("LABELS", labels)
     return torch.from_numpy(images_matrix), torch.from_numpy(labels)
-
-if __name__ == '__main__':
-	get_data("meta/train.json", "cannoli", "chicken_curry")
-	get_data("meta/test.json", "cannoli", "chicken_curry")
