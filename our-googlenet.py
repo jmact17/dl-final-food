@@ -319,8 +319,6 @@ def train(model, train_data, train_labels):
     labels = torch.tensor(train_labels[indices])
     inputs = torch.tensor(train_data[indices,:,:,:])
     for i in range(0, len(inputs), model.batch_size):
-        # if (i + model.batch_size > len(train_data)):
-        # 	return
         inputs_batch = inputs[i:i+model.batch_size]
         labels_batch = labels[i:i+model.batch_size]
 
@@ -345,8 +343,6 @@ def test(model, test_data, test_labels):
     sum_acc = 0.0
     num_batches = 0
     for i in range(0, len(test_data), model.batch_size):
-        # if (i + model.batch_size > len(test_data)):
-        # 	break
         inputs_batch = test_data[i:i+model.batch_size]
         labels_batch = test_labels[i:i+model.batch_size]
         logits = model.forward(inputs_batch.float()).logits
@@ -363,14 +359,8 @@ def test(model, test_data, test_labels):
 
 if __name__ == '__main__':
     train_data, train_labels = get_data("meta/train.json", "cannoli", "chicken_curry")
-    print(train_data.size())
     test_data, test_labels = get_data("meta/test.json", "cannoli", "chicken_curry")
-    print(test_data.size())
     model = googlenet(num_classes=2).float()
-    #logits = model.forward(train_data.float())
-    #print("FORWARD PASS LOGITS: ",logits)
-    for i in range(1): # how many epochs?
-        print("Epoch: {}".format(i))
-        train(model, train_data.float(), train_labels)
+    train(model, train_data.float(), train_labels)
     acc = test(model, test_data.float(), test_labels)
     print("Test accuracy: {}".format(acc))
