@@ -120,7 +120,6 @@ class GoogLeNet(nn.Module):
                 X = stats.truncnorm(-2, 2, scale=0.01)
                 values = torch.as_tensor(X.rvs(m.weight.numel()), dtype=m.weight.dtype)
                 values = values.view(m.weight.size())
-                print(m.weight.size())
                 with torch.no_grad():
                     m.weight.copy_(values)
             elif isinstance(m, nn.BatchNorm2d):
