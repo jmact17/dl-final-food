@@ -137,9 +137,6 @@ class GoogLeNet(nn.Module):
     def _forward(self, x):
         # type: (Tensor) -> Tuple[Tensor, Optional[Tensor], Optional[Tensor]]
         # N x 3 x 224 x 224
-        # add a random noise vector 
-        noise = torch.FloatTensor(224, 224).uniform_(-1, 1)
-        x = x*noise 
         x = self.conv1(x)
         # N x 64 x 112 x 112
         x = self.maxpool1(x)
@@ -318,6 +315,9 @@ def train(model, train_data, train_labels):
     np.random.shuffle(indices)
     labels = torch.tensor(train_labels[indices])
     inputs = torch.tensor(train_data[indices,:,:,:])
+    # add a random noise vector 
+    noise = torch.FloatTensor(inputs.size()[0], inputs.size()[1]).uniform_(-1, 1)
+    inputs = inputs * noise 
     for i in range(0, len(inputs), model.batch_size):
         inputs_batch = inputs[i:i+model.batch_size]
         labels_batch = labels[i:i+model.batch_size]
@@ -361,6 +361,7 @@ if __name__ == '__main__':
     train_data, train_labels = get_data("meta/train.json", "cannoli", "chicken_curry")
     test_data, test_labels = get_data("meta/test.json", "cannoli", "chicken_curry")
     model = googlenet(num_classes=2).float()
-    train(model, train_data.float(), train_labels)
+    for epoch in range(1):
+        train(model, train_data.float(), train_labels)
     acc = test(model, test_data.float(), test_labels)
     print("Test accuracy: {}".format(acc))
